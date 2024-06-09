@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, setDoc, doc, Timestamp } from "firebase/firestore";
+import { getFirestore, setDoc, doc, arrayUnion } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
 import express from 'express';
@@ -28,8 +28,24 @@ app.get('/', function (req, res) {
 
 app.post('/', async (req, res) => {
     const { body } = req;
-    console.log(body);
-    await setDoc(doc(db, collection, uuidv4()), body);
+    const { data, id } = body;
+    if (!data || !id) {
+        res.status(400).send({
+            message: 'Wrong data'
+        });
+        return;
+    }
+    const reading = doc(db, collection, id);
+
+    if (reading) {
+        setDoc(reading, {
+            data: arrayUnion(...data)
+        }, { merge: true });
+        res.send(req.body);
+        return;
+    }
+    
+    await setDoc(doc(db, collection, id, body));
     res.send(req.body);
 })
 
